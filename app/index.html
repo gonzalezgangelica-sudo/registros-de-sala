@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#4a4a4a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Registro Marcas Propias</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="assets/icon-192.png" />
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+  </head>
+  <body>
+    <header class="app-toolbar">
+      <div class="brand">Stolt Sea Farm · Marcas propias</div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-panel="principal" type="button">
+          Línea principal
+        </button>
+        <button class="tab" data-panel="vap" type="button">Línea VAP</button>
+        <button class="tab" data-panel="historico" type="button">Histórico</button>
+        <button class="tab" data-panel="config" type="button">Config</button>
+        <button class="tab" data-panel="listas" type="button">Listas</button>
+      </nav>
+    </header>
+
+    <main class="main">
+      <section id="panel-principal" class="panel active"></section>
+      <section id="panel-vap" class="panel"></section>
+
+      <section id="panel-historico" class="panel">
+        <div class="card">
+          <h2>Histórico de envíos</h2>
+          <div style="overflow-x: auto">
+            <table class="hist-table" id="hist-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Usuario</th>
+                  <th>Registro</th>
+                  <th>PDF</th>
+                  <th>Estado</th>
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="sheet-actions">
+            <button type="button" class="btn" id="btn-clear-hist">
+              Vaciar histórico local
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-config" class="panel">
+        <div class="card">
+          <h2>Configuración (equivalente hoja CONFIG)</h2>
+          <div class="form-grid" id="config-form"></div>
+          <div class="sheet-actions">
+            <button type="button" class="btn btn-primary" id="btn-save-config">
+              Guardar config
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-listas" class="panel">
+        <div class="card">
+          <h2>Listas desplegables (equivalente hoja LISTAS)</h2>
+          <p style="margin-top: 0; color: #666">
+            Una opción por línea. Se aplican al guardar.
+          </p>
+          <div class="list-editor" id="listas-form"></div>
+          <div class="sheet-actions">
+            <button type="button" class="btn btn-primary" id="btn-save-listas">
+              Guardar listas
+            </button>
+            <button type="button" class="btn" id="btn-reset-listas">
+              Restaurar por defecto
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="pdf-root" aria-hidden="true"></div>
+    <div class="toast" id="toast"></div>
+
+    <div class="overlay" id="confirm-overlay">
+      <div class="modal">
+        <h3 id="confirm-title">Confirmar</h3>
+        <p id="confirm-msg"></p>
+        <div class="row">
+          <button type="button" class="btn" id="confirm-cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirm-ok">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Registro Marcas Propias",
+  "short_name": "Marcas Propias",
+  "description": "Registro de seguimiento especificaciones marcas propias / Protocolo 1",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#ffffff",
+  "theme_color": "#4a4a4a",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
