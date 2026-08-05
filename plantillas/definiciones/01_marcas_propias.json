@@ -1,0 +1,69 @@
+{
+  "id": "marcas_propias",
+  "nombre": "Registro seguimiento marcas propias / Protocolo 1",
+  "codigo": "F7.2-01-00-02",
+  "revision": "6",
+  "fechaDoc": "06/26",
+  "columnas": 8,
+  "listas": {
+    "marcas": ["Carrefour", "Coop", "Oye", "Metro Francia", "NO ASC", "Metro Italia", "Metro Alemania"],
+    "granjas": ["Lira", "Quilmas", "Couso", "Palmeira", "Merexo", "Vilán", "Cervo", "Anglet", "Tocha", "Oye", "Hafnir"],
+    "checks": ["si", "No", "N/A"],
+    "tiposMarchamo": ["Metro Francia", "Metro Italia", "Coop Portugal", "Coop España", "Neptura"],
+    "tiposEtiqueta": ["ASC", "No ASC/Protocolo 1", "Coop", "Metro Alemania", "Metro Italia", "Metro Francia"],
+    "encargados": ["Juan Rey", "Roberto N", "Maika"],
+    "supervisores": ["Diego", "Roberto", "Isma", "Mary Jo", "Erica"]
+  },
+  "hojas": [
+    {
+      "nombre": "REGISTRO LÍNEA PRINCIPAL",
+      "tituloLinea": "Línea principal",
+      "hojaMeta": "2 de 3",
+      "campos": [
+        { "key": "fechaEmpaque", "label": "FECHA\nEMPAQUE", "type": "date", "obligatorio": true },
+        { "key": "producto", "label": "PRODUCTO", "type": "text", "obligatorio": false },
+        { "key": "marcaPropia", "label": "MARCA PROPIA/\nPRODUCTO NO\nASC", "type": "select", "list": "marcas", "obligatorio": true },
+        { "key": "granja", "label": "GRANJA", "type": "select", "list": "granjas", "obligatorio": true },
+        { "key": "checkOrigen", "label": "CHECK ORIGEN\n(Ver pie página)", "type": "select", "list": "checks", "obligatorio": true },
+        { "key": "fechaDespesque", "label": "FECHA\nDESPESQUE", "type": "date", "obligatorio": true },
+        { "key": "fechaEtiqueta", "label": "FECHA\nETIQUETA", "type": "date", "obligatorio": true },
+        { "key": "fechaSalida", "label": "FECHA SALIDA", "type": "date", "obligatorio": true },
+        { "key": "fechaMarchamo", "label": "FECHA\nMARCHAMO", "type": "date", "obligatorio": true },
+        { "key": "tipoMarchamo", "label": "TIPO\nMARCHAMO", "type": "select", "list": "tiposMarchamo", "obligatorio": true },
+        { "key": "tipoEtiqueta", "label": "TIPO ETIQUETA", "type": "select", "list": "tiposEtiqueta", "obligatorio": true, "highlight": true },
+        { "key": "vaciadoLinea", "label": "VACIADO LÍNEA", "type": "text", "obligatorio": true },
+        { "key": "checkMarchamo", "label": "CHECK\nMARCHAMO", "type": "select", "list": "checks", "obligatorio": true },
+        { "key": "checkCambioFechaEtq", "label": "CHECK CAMBIO\nFECHA ETQ", "type": "select", "list": "checks", "obligatorio": true },
+        { "key": "encargado", "label": "ENCARGADO", "type": "select", "list": "encargados", "obligatorio": true },
+        { "key": "marelSupervisor", "label": "MAREL\nSUPERVISOR", "type": "select", "list": "supervisores", "obligatorio": true },
+        { "key": "observaciones", "label": "OBSERVACIONES", "type": "text", "obligatorio": false }
+      ]
+    },
+    {
+      "nombre": "REGISTRO LÍNEA VAP",
+      "tituloLinea": "Línea VAP",
+      "hojaMeta": "3 de 3",
+      "campos": [
+        { "key": "fechaEmpaque", "label": "FECHA\nEMPAQUE", "type": "date", "obligatorio": true },
+        { "key": "producto", "label": "PRODUCTO", "type": "text", "obligatorio": false },
+        { "key": "marcaPropia", "label": "MARCA PROPIA/\nPRODUCTO NO\nASC", "type": "select", "list": "marcas", "obligatorio": true },
+        { "key": "granja", "label": "GRANJA", "type": "select", "list": "granjas", "obligatorio": true },
+        { "key": "checkOrigen", "label": "CHECK ORIGEN\n(Ver pie página)", "type": "select", "list": "checks", "obligatorio": true },
+        { "key": "fechaDespesque", "label": "FECHA\nDESPESQUE", "type": "date", "obligatorio": true },
+        { "key": "fechaEtiqueta", "label": "FECHA\nETIQUETA", "type": "date", "obligatorio": true },
+        { "key": "fechaSalida", "label": "FECHA SALIDA", "type": "date", "obligatorio": true },
+        { "key": "tipoEtiqueta", "label": "TIPO ETIQUETA", "type": "select", "list": "tiposEtiqueta", "obligatorio": true, "highlight": true },
+        { "key": "checkCambioFechaEtq", "label": "CHECK CAMBIO\nFECHA ETQ", "type": "select", "list": "checks", "obligatorio": true },
+        { "key": "encargado", "label": "ENCARGADO", "type": "select", "list": "encargados", "obligatorio": true },
+        { "key": "marelSupervisor", "label": "MAREL\nSUPERVISOR", "type": "select", "list": "supervisores", "obligatorio": true },
+        { "key": "observaciones", "label": "OBSERVACIONES", "type": "text", "obligatorio": false }
+      ]
+    }
+  ],
+  "notasPie": [
+    "COOP – Oye//Tinas identificadas con 'R' = NO",
+    "CARREFOUR – Solo España",
+    "Rodaballo ASC: por defecto todo el rodaballo que no sea Protocolo 1. Se incluye logo en etiqueta final. No dejamos registro aquí.",
+    "Rodaballo NO ASC: Tinas identificadas como Protocolo 1-NO ASC o como Protocolo 1. Se incluye código de protocolo 1, se indica que es así en \"tipo de etiqueta\" y no lleva logo ASC en la etiqueta."
+  ]
+}

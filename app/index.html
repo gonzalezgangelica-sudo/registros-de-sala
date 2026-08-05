@@ -8,7 +8,7 @@
     />
     <meta name="theme-color" content="#4a4a4a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Registro Marcas Propias</title>
+    <title>Registros de sala</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="assets/icon-192.png" />
@@ -17,21 +17,35 @@
   </head>
   <body>
     <header class="app-toolbar">
-      <div class="brand">Stolt Sea Farm · Marcas propias</div>
+      <div class="brand">Stolt Sea Farm · Registros de sala</div>
+      <div id="bridge-status" class="bridge-status">Comprobando Outlook…</div>
       <nav class="tabs" role="tablist">
-        <button class="tab active" data-panel="principal" type="button">
-          Línea principal
-        </button>
-        <button class="tab" data-panel="vap" type="button">Línea VAP</button>
+        <button class="tab active" data-panel="hub" type="button">Inicio</button>
         <button class="tab" data-panel="historico" type="button">Histórico</button>
         <button class="tab" data-panel="config" type="button">Config</button>
-        <button class="tab" data-panel="listas" type="button">Listas</button>
       </nav>
     </header>
 
     <main class="main">
-      <section id="panel-principal" class="panel active"></section>
-      <section id="panel-vap" class="panel"></section>
+      <section id="panel-hub" class="panel active">
+        <div class="card">
+          <h2>Selecciona un registro</h2>
+          <p class="muted">
+            Al pulsar <strong>Enviar</strong> se genera el PDF y se manda por
+            <strong>Outlook del PC</strong> con el archivo adjunto (igual que el Excel),
+            si el servidor está lanzado con <code>lanzar-tablet.bat</code>.
+          </p>
+          <div class="hub-grid" id="hub-grid"></div>
+        </div>
+      </section>
+
+      <section id="panel-form" class="panel">
+        <div class="sheet-actions" style="justify-content: flex-start; margin-bottom: 0.5rem">
+          <button type="button" class="btn" id="btn-back-hub">← Volver al inicio</button>
+          <span id="form-title" class="brand" style="margin-left: 0.5rem"></span>
+        </div>
+        <div id="form-root"></div>
+      </section>
 
       <section id="panel-historico" class="panel">
         <div class="card">
@@ -52,41 +66,22 @@
               <tbody></tbody>
             </table>
           </div>
-          <div class="sheet-actions">
-            <button type="button" class="btn" id="btn-clear-hist">
-              Vaciar histórico local
-            </button>
-          </div>
         </div>
       </section>
 
       <section id="panel-config" class="panel">
         <div class="card">
-          <h2>Configuración (equivalente hoja CONFIG)</h2>
+          <h2>Configuración</h2>
           <div class="form-grid" id="config-form"></div>
           <div class="sheet-actions">
             <button type="button" class="btn btn-primary" id="btn-save-config">
               Guardar config
             </button>
           </div>
-        </div>
-      </section>
-
-      <section id="panel-listas" class="panel">
-        <div class="card">
-          <h2>Listas desplegables (equivalente hoja LISTAS)</h2>
-          <p style="margin-top: 0; color: #666">
-            Una opción por línea. Se aplican al guardar.
+          <p class="muted">
+            Los destinatarios se pueden sobrescribir por registro. Por defecto se usan
+            los del Excel original.
           </p>
-          <div class="list-editor" id="listas-form"></div>
-          <div class="sheet-actions">
-            <button type="button" class="btn btn-primary" id="btn-save-listas">
-              Guardar listas
-            </button>
-            <button type="button" class="btn" id="btn-reset-listas">
-              Restaurar por defecto
-            </button>
-          </div>
         </div>
       </section>
     </main>
@@ -100,9 +95,7 @@
         <p id="confirm-msg"></p>
         <div class="row">
           <button type="button" class="btn" id="confirm-cancel">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="confirm-ok">
-            Confirmar
-          </button>
+          <button type="button" class="btn btn-primary" id="confirm-ok">Confirmar</button>
         </div>
       </div>
     </div>

@@ -1,49 +1,10 @@
-import {
-  DEFAULT_CONFIG,
-  DEFAULT_LISTAS,
-  CAMPOS_OBLIGATORIOS,
-  REGISTROS,
-  STORAGE_KEYS,
-} from "./data.js";
+import { REGISTROS_CATALOGO, MAIL_DEFAULTS } from "./registros.js";
+import { checkBridge, enviarConAdjunto } from "./mail.js";
+import { renderForm, saveState, emptyState } from "./forms.js";
 
-/* —— Storage helpers —— */
-function loadJSON(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : structuredClone(fallback);
-  } catch {
-    return structuredClone(fallback);
-  }
-}
-
-function saveJSON(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-let config = loadJSON(STORAGE_KEYS.config, DEFAULT_CONFIG);
-let listas = loadJSON(STORAGE_KEYS.listas, DEFAULT_LISTAS);
-let historico = loadJSON(STORAGE_KEYS.historico, []);
-
-function emptyGrid(registro) {
-  const cols = registro.columnas;
-  const data = {};
-  for (const campo of registro.campos) {
-    data[campo.key] = Array(cols).fill("");
-  }
-  return data;
-}
-
-function loadDraft(registro) {
-  return loadJSON(STORAGE_KEYS.draft(registro.id), emptyGrid(registro));
-}
-
-function saveDraft(registro, data) {
-  saveJSON(STORAGE_KEYS.draft(registro.id), data);
-}
-
-/* —— UI helpers —— */
 const toastEl = document.getElementById("toast");
 let toastTimer;
+let currentRegistroId = null;
 
 function toast(msg, type = "") {
   toastEl.textContent = msg;
@@ -51,7 +12,7 @@ function toast(msg, type = "") {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toastEl.className = "toast";
-  }, 3200);
+  }, 3500);
 }
 
 function confirmDialog(title, msg) {
@@ -62,493 +23,334 @@ function confirmDialog(title, msg) {
     overlay.classList.add("show");
     const ok = document.getElementById("confirm-ok");
     const cancel = document.getElementById("confirm-cancel");
-    const done = (val) => {
+    const done = (v) => {
       overlay.classList.remove("show");
       ok.onclick = null;
       cancel.onclick = null;
-      resolve(val);
+      resolve(v);
     };
     ok.onclick = () => done(true);
     cancel.onclick = () => done(false);
   });
 }
 
-function usuarioActual() {
-  return localStorage.getItem("rmp_usuario") || "tablet";
+function showPanel(name) {
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.classList.toggle("active", t.dataset.panel === name);
+  });
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+  const panel = document.getElementById(`panel-${name}`);
+  if (panel) panel.classList.add("active");
 }
 
-/* —— Tabs —— */
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-    tab.classList.add("active");
-    document.getElementById(`panel-${tab.dataset.panel}`).classList.add("active");
+    showPanel(tab.dataset.panel);
     if (tab.dataset.panel === "historico") renderHistorico();
   });
 });
 
-/* —— Render registro —— */
-function optionsHtml(listKey, selected) {
-  const opts = listas[listKey] || [];
-  return (
-    `<option value=""></option>` +
-    opts
-      .map(
-        (o) =>
-          `<option value="${escapeAttr(o)}" ${
-            o === selected ? "selected" : ""
-          }>${escapeHtml(o)}</option>`
-      )
-      .join("")
-  );
-}
+document.getElementById("btn-back-hub").addEventListener("click", () => {
+  currentRegistroId = null;
+  showPanel("hub");
+});
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replaceAll('"', "&quot;");
-}
-
-function renderRegister(registro) {
-  const panel = document.getElementById(`panel-${registro.id}`);
-  const data = loadDraft(registro);
-  const cols = registro.columnas;
-
-  let rows = "";
-  for (const campo of registro.campos) {
-    const labelClass = campo.highlight ? "row-label highlight" : "row-label";
-    let cells = "";
-    for (let i = 0; i < cols; i++) {
-      const val = data[campo.key]?.[i] ?? "";
-      const name = `${campo.key}__${i}`;
-      let control = "";
-      if (campo.type === "select") {
-        control = `<select name="${name}" data-field="${campo.key}" data-col="${i}">${optionsHtml(
-          campo.list,
-          val
-        )}</select>`;
-      } else if (campo.type === "date") {
-        control = `<input type="date" name="${name}" data-field="${campo.key}" data-col="${i}" value="${escapeAttr(
-          val
-        )}" />`;
-      } else if (campo.spanAll && i === 0) {
-        control = `<textarea name="${name}" data-field="${campo.key}" data-col="${i}" rows="2">${escapeHtml(
-          val
-        )}</textarea>`;
-      } else if (campo.spanAll && i > 0) {
-        control = "";
-      } else {
-        control = `<input type="text" name="${name}" data-field="${campo.key}" data-col="${i}" value="${escapeAttr(
-          val
-        )}" autocomplete="off" />`;
-      }
-      cells += `<td class="cell" data-field="${campo.key}" data-col="${i}">${control}</td>`;
-    }
-    rows += `<tr><th class="${labelClass}">${escapeHtml(campo.label)}</th>${cells}</tr>`;
+/* —— Bridge status —— */
+async function refreshBridge() {
+  const el = document.getElementById("bridge-status");
+  const b = await checkBridge();
+  if (b.ok && b.outlook) {
+    el.textContent = "Outlook PC: listo (envío con adjunto)";
+    el.className = "bridge-status ok";
+  } else if (b.ok) {
+    el.textContent = "Servidor OK, pero Outlook no disponible";
+    el.className = "bridge-status bad";
+  } else {
+    el.textContent = "Sin puente PC — usa lanzar-tablet.bat";
+    el.className = "bridge-status bad";
   }
+}
 
-  const colHeaders = Array.from({ length: cols }, (_, i) => `<th>${i + 1}</th>`).join(
-    ""
-  );
-
-  panel.innerHTML = `
-    <article class="form-sheet" id="sheet-${registro.id}">
-      <div class="doc-header">
-        <img src="${registro.headerImg}" alt="Cabecera formulario ${registro.tituloLinea}" />
-      </div>
-      <div class="line-title">${escapeHtml(registro.tituloLinea)}</div>
-      <div class="grid-wrap">
-        <table class="register-table" id="table-${registro.id}">
-          <thead>
-            <tr>
-              <th class="corner"></th>
-              ${colHeaders}
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <div class="footer-notes">
-        <img src="assets/footer-notas.png" alt="Notas check origen" />
-      </div>
-      <div class="sheet-actions">
-        <button type="button" class="btn" data-action="guardar" data-reg="${registro.id}">Guardar borrador</button>
-        <button type="button" class="btn btn-danger" data-action="limpiar" data-reg="${registro.id}">Limpiar</button>
-        <button type="button" class="btn btn-primary" data-action="enviar" data-reg="${registro.id}">Enviar</button>
-      </div>
-    </article>
-  `;
-
-  panel.querySelectorAll("input, select, textarea").forEach((el) => {
-    el.addEventListener("change", () => persistFromDom(registro));
-    el.addEventListener("input", () => persistFromDom(registro));
-  });
-
-  panel.querySelectorAll("[data-action]").forEach((btn) => {
-    btn.addEventListener("click", () => handleAction(btn.dataset.action, registro));
+/* —— Hub —— */
+function renderHub() {
+  const grid = document.getElementById("hub-grid");
+  grid.innerHTML = REGISTROS_CATALOGO.map(
+    (r) => `<button type="button" class="hub-card" data-id="${r.id}">
+      <h3>${r.nombre}</h3>
+      <p>${r.descripcion}</p>
+      <div class="src">${r.fuente}</div>
+    </button>`
+  ).join("");
+  grid.querySelectorAll(".hub-card").forEach((btn) => {
+    btn.addEventListener("click", () => openRegistro(btn.dataset.id));
   });
 }
 
-function readFromDom(registro) {
-  const data = emptyGrid(registro);
-  const table = document.getElementById(`table-${registro.id}`);
-  table.querySelectorAll("[data-field]").forEach((el) => {
-    const field = el.dataset.field;
-    const col = Number(el.dataset.col);
-    if (!Number.isFinite(col)) return;
-    data[field][col] = el.value ?? "";
+function openRegistro(id) {
+  currentRegistroId = id;
+  const meta = REGISTROS_CATALOGO.find((r) => r.id === id);
+  document.getElementById("form-title").textContent = meta?.nombre || id;
+  const root = document.getElementById("form-root");
+  showPanel("form");
+  renderForm(id, root, {
+    onEnviar: (state, sheetEl) => handleEnviar(id, state, sheetEl),
+    onLimpiar: async () => {
+      const ok = await confirmDialog("Limpiar", "¿Vaciar el borrador de este registro?");
+      if (!ok) return;
+      localStorage.removeItem(`rmp_form_${id}`);
+      openRegistro(id);
+      toast("Registro limpio", "ok");
+    },
+    onChange: () => toast("Borrador guardado", "ok"),
   });
-  return data;
 }
 
-function persistFromDom(registro) {
-  saveDraft(registro, readFromDom(registro));
-}
-
-function hasAnyData(data, registro) {
-  return registro.campos.some((c) =>
-    (data[c.key] || []).some((v) => String(v).trim() !== "")
-  );
-}
-
-function columnasUsadas(data, registro) {
-  const used = [];
-  for (let i = 0; i < registro.columnas; i++) {
-    const filled = registro.campos.some(
-      (c) => String(data[c.key]?.[i] ?? "").trim() !== ""
-    );
-    if (filled) used.push(i);
-  }
-  // observaciones solo en col 0 cuenta como uso de col 0
-  return used;
-}
-
-function validate(data, registro) {
-  const errors = [];
-  const used = columnasUsadas(data, registro);
-  if (used.length === 0) {
-    return { ok: false, errors: ["No hay datos en el registro para enviar."] };
-  }
-
-  // limpiar marcas invalid
-  document
-    .querySelectorAll(`#table-${registro.id} .invalid`)
-    .forEach((td) => td.classList.remove("invalid"));
-
-  for (const col of used) {
-    for (const campo of registro.campos) {
-      if (campo.spanAll && col > 0) continue;
-      const obligatorio =
-        CAMPOS_OBLIGATORIOS[campo.key] === true &&
-        !(campo.key === "observaciones");
-      // VAP no tiene algunos campos → solo validar los del registro
-      if (!obligatorio) continue;
-      // producto no es obligatorio en CONFIG Excel
-      const val = String(data[campo.key]?.[col] ?? "").trim();
-      if (!val) {
-        errors.push(`Columna ${col + 1}: falta ${campo.label.replaceAll("\n", " ")}`);
-        const td = document.querySelector(
-          `#table-${registro.id} td[data-field="${campo.key}"][data-col="${col}"]`
-        );
-        td?.classList.add("invalid");
-      }
-    }
-  }
-  return { ok: errors.length === 0, errors };
-}
-
-async function handleAction(action, registro) {
-  if (action === "guardar") {
-    persistFromDom(registro);
-    toast("Borrador guardado en la tablet", "ok");
-    return;
-  }
-  if (action === "limpiar") {
-    const ok = await confirmDialog(
-      "Limpiar registro",
-      `¿Vaciar todos los datos de ${registro.tituloLinea}?`
-    );
-    if (!ok) return;
-    saveDraft(registro, emptyGrid(registro));
-    renderRegister(registro);
-    toast("Registro limpio", "ok");
-    return;
-  }
-  if (action === "enviar") {
-    await enviarRegistro(registro);
-  }
-}
-
-/* —— PDF + envío —— */
-function stampName(prefix) {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${prefix}_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(
-    d.getHours()
-  )}${pad(d.getMinutes())}.pdf`;
-}
-
-function buildPdfClone(registro, data) {
-  const root = document.getElementById("pdf-root");
-  const cols = registro.columnas;
-  let body = "";
-  for (const campo of registro.campos) {
-    const labelClass = campo.highlight ? "row-label highlight" : "row-label";
-    let cells = "";
-    for (let i = 0; i < cols; i++) {
-      const val = data[campo.key]?.[i] ?? "";
-      cells += `<td class="cell" style="text-align:center;padding:6px;font-size:11px;">${escapeHtml(
-        val
-      )}</td>`;
-    }
-    body += `<tr><th class="${labelClass}" style="white-space:pre-line;font-size:10px;padding:4px;">${escapeHtml(
-      campo.label
-    )}</th>${cells}</tr>`;
-  }
-  const headers = Array.from({ length: cols }, (_, i) => `<th>${i + 1}</th>`).join("");
-  root.innerHTML = `
-    <div class="form-sheet" style="box-shadow:none;border:none;">
-      <div class="doc-header"><img src="${registro.headerImg}" style="width:100%"/></div>
-      <div class="line-title">${escapeHtml(registro.tituloLinea)}</div>
-      <table class="register-table" style="min-width:0;width:100%;">
-        <thead><tr><th class="corner"></th>${headers}</tr></thead>
-        <tbody>${body}</tbody>
-      </table>
-      <div class="footer-notes" style="margin-top:12px;"><img src="assets/footer-notas.png" style="width:100%"/></div>
-    </div>
-  `;
-  return root.firstElementChild;
-}
-
-async function generatePdfBlob(registro, data) {
-  const el = buildPdfClone(registro, data);
-  // wait images
+/* —— PDF —— */
+async function generatePdfFromElement(el, filenamePrefix) {
+  const cloneHost = document.getElementById("pdf-root");
+  cloneHost.innerHTML = "";
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll(".sheet-actions").forEach((n) => n.remove());
+  cloneHost.appendChild(clone);
   await Promise.all(
-    [...el.querySelectorAll("img")].map(
-      (img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise((res) => {
-              img.onload = res;
-              img.onerror = res;
-            })
+    [...clone.querySelectorAll("img")].map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
+          })
     )
   );
-  const canvas = await html2canvas(el, {
-    scale: 2,
+  // copy input values into text for PDF
+  el.querySelectorAll("input, select, textarea").forEach((src, idx) => {
+    const dst = clone.querySelectorAll("input, select, textarea")[idx];
+    if (!dst) return;
+    if (src.tagName === "SELECT") {
+      const span = document.createElement("div");
+      span.textContent = src.value || "";
+      span.style.padding = "8px";
+      span.style.textAlign = "center";
+      dst.replaceWith(span);
+    } else if (src.tagName === "TEXTAREA") {
+      const span = document.createElement("div");
+      span.textContent = src.value || "";
+      span.style.padding = "8px";
+      dst.replaceWith(span);
+    } else {
+      dst.setAttribute("value", src.value || "");
+      dst.value = src.value || "";
+    }
+  });
+
+  const canvas = await html2canvas(clone, {
+    scale: 1.5,
     useCORS: true,
     backgroundColor: "#ffffff",
+    windowWidth: Math.max(clone.scrollWidth, 1100),
   });
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4",
-  });
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 8;
+  const margin = 6;
   const imgW = pageW - margin * 2;
   const imgH = (canvas.height * imgW) / canvas.width;
-  const y = Math.max(margin, (pageH - imgH) / 2);
-  pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, y, imgW, Math.min(imgH, pageH - margin * 2));
+  let heightLeft = imgH;
+  let position = margin;
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+  pdf.addImage(imgData, "JPEG", margin, position, imgW, imgH);
+  heightLeft -= pageH - margin * 2;
+  while (heightLeft > 0) {
+    position = margin - (imgH - heightLeft);
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", margin, position, imgW, imgH);
+    heightLeft -= pageH - margin * 2;
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  const d = new Date();
+  const filename = `${filenamePrefix}_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+    d.getDate()
+  )}_${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
+  return { blob: pdf.output("blob"), filename };
+}
+
+function mailFor(id) {
+  const defaults = MAIL_DEFAULTS[id] || {
+    asunto: "Registro de sala",
+    cuerpo: "Se adjunta el registro.",
+    to: [],
+    cc: [],
+  };
+  const cfg = loadConfig();
+  // global override if filled
+  const to = (cfg.destinatarios || []).filter(Boolean).length
+    ? cfg.destinatarios.filter(Boolean)
+    : defaults.to;
+  const cc = cfg.copia ? [cfg.copia] : defaults.cc;
   return {
-    blob: pdf.output("blob"),
-    filename: stampName(registro.pdfPrefix),
+    to,
+    cc,
+    subject: cfg.asunto || defaults.asunto,
+    body: cfg.cuerpo || defaults.cuerpo,
   };
 }
 
-function addHistorico(entry) {
-  historico.unshift(entry);
-  saveJSON(STORAGE_KEYS.historico, historico);
+function loadConfig() {
+  try {
+    return JSON.parse(localStorage.getItem("rmp_config_global") || "{}");
+  } catch {
+    return {};
+  }
 }
 
-async function shareOrDownload(blob, filename) {
-  const file = new File([blob], filename, { type: "application/pdf" });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: config.asunto,
-        text: config.cuerpo,
-      });
-      return "compartido";
-    } catch (e) {
-      if (e.name === "AbortError") return "cancelado";
-    }
-  }
-  // fallback download
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-  return "descargado";
+function saveConfig(cfg) {
+  localStorage.setItem("rmp_config_global", JSON.stringify(cfg));
 }
 
-function openMailDraft(filename) {
-  const to = (config.destinatarios || []).filter(Boolean).join(";");
-  const cc = config.copia || "";
-  const subject = encodeURIComponent(config.asunto || "");
-  const body = encodeURIComponent(
-    `${config.cuerpo || ""}\n\nPDF: ${filename}\n(Adjunta el PDF descargado/compartido desde la tablet.)`
-  );
-  const ccPart = cc ? `&cc=${encodeURIComponent(cc)}` : "";
-  window.location.href = `mailto:${to}?subject=${subject}${ccPart}&body=${body}`;
+function addLocalHist(entry) {
+  const key = "rmp_historico";
+  let hist = [];
+  try {
+    hist = JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    hist = [];
+  }
+  hist.unshift(entry);
+  localStorage.setItem(key, JSON.stringify(hist.slice(0, 300)));
 }
 
-async function enviarRegistro(registro) {
-  const data = readFromDom(registro);
-  persistFromDom(registro);
-
-  if (!hasAnyData(data, registro)) {
-    toast("No hay datos en el registro para enviar.", "error");
-    return;
-  }
-
-  const { ok, errors } = validate(data, registro);
-  if (!ok) {
-    toast(errors[0] || "Faltan campos obligatorios", "error");
-    return;
-  }
-
-  const dest = (config.destinatarios || []).filter(Boolean).join(";");
-  if (!dest) {
-    toast("No hay destinatarios en Config.", "error");
-    return;
-  }
-
-  const confirmed = await confirmDialog(
+async function handleEnviar(id, state, sheetEl) {
+  const ok = await confirmDialog(
     "Enviar registro",
-    `Se generará el PDF de ${registro.tituloLinea}, se podrá compartir/adjuntar al correo y se vaciará el formulario (como en Excel).`
+    "Se generará el PDF y se enviará por correo con el archivo adjunto (Outlook del PC si el servidor está activo)."
   );
-  if (!confirmed) return;
+  if (!ok) return;
 
   try {
     toast("Generando PDF…");
-    const { blob, filename } = await generatePdfBlob(registro, data);
-    const modo = await shareOrDownload(blob, filename);
-
-    if (modo === "cancelado") {
-      addHistorico({
-        fecha: new Date().toISOString(),
-        usuario: usuarioActual(),
-        registro: registro.nombre,
-        pdf: filename,
-        estado: "Cancelado",
-        observaciones: "Usuario canceló compartir",
-      });
-      toast("Envío cancelado", "error");
+    const prefix = state.pdfPrefix || id;
+    const { blob, filename } = await generatePdfFromElement(sheetEl, prefix);
+    const mail = mailFor(id);
+    if (!mail.to.length) {
+      toast("No hay destinatarios configurados", "error");
       return;
     }
-
-    // Abrir cliente de correo (Android Gmail / Outlook app)
-    openMailDraft(filename);
-
-    addHistorico({
-      fecha: new Date().toISOString(),
-      usuario: usuarioActual(),
-      registro: registro.nombre,
-      pdf: filename,
-      estado: modo === "compartido" ? "Compartido" : "PDF listo / mail abierto",
-      observaciones: `${dest} | Asunto: ${config.asunto}`,
+    toast("Enviando correo…");
+    const result = await enviarConAdjunto({
+      blob,
+      filename,
+      to: mail.to,
+      cc: mail.cc,
+      subject: mail.subject,
+      body: mail.body,
+      registro: state.registroNombre || id,
     });
 
-    saveDraft(registro, emptyGrid(registro));
-    renderRegister(registro);
-    toast("PDF generado. Completa el envío del correo si aplica.", "ok");
+    addLocalHist({
+      fecha: new Date().toISOString(),
+      usuario: localStorage.getItem("rmp_usuario") || "tablet",
+      registro: state.registroNombre || id,
+      pdf: filename,
+      estado: result.estado,
+      observaciones: `${mail.to.join(";")} | Asunto: ${mail.subject}`,
+    });
+
+    if (result.modo === "outlook") {
+      localStorage.removeItem(`rmp_form_${id}`);
+      openRegistro(id);
+      toast("Enviado por Outlook con PDF adjunto", "ok");
+    } else {
+      toast(`PDF listo (${result.modo}). Completa el correo si hace falta.`, "ok");
+    }
   } catch (err) {
     console.error(err);
-    addHistorico({
+    addLocalHist({
       fecha: new Date().toISOString(),
-      usuario: usuarioActual(),
-      registro: registro.nombre,
+      usuario: localStorage.getItem("rmp_usuario") || "tablet",
+      registro: state.registroNombre || id,
       pdf: "",
-      estado: "Error PDF",
+      estado: "Error envío",
       observaciones: String(err.message || err),
     });
-    toast("Error al generar el PDF: " + (err.message || err), "error");
+    toast("Error: " + (err.message || err), "error");
   }
 }
 
 /* —— Histórico —— */
-function renderHistorico() {
+async function renderHistorico() {
   const tbody = document.querySelector("#hist-table tbody");
-  if (!historico.length) {
-    tbody.innerHTML = `<tr><td colspan="7">Sin registros todavía.</td></tr>`;
+  let items = [];
+  try {
+    items = JSON.parse(localStorage.getItem("rmp_historico") || "[]");
+  } catch {
+    items = [];
+  }
+  try {
+    const r = await fetch("/api/historico");
+    if (r.ok) {
+      const data = await r.json();
+      if (data.items?.length) {
+        // merge server first
+        const localKeys = new Set(items.map((i) => i.fecha + i.pdf));
+        for (const s of data.items) {
+          if (!localKeys.has(s.fecha + s.pdf)) items.push(s);
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  items.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="7">Sin envíos todavía.</td></tr>`;
     return;
   }
-  tbody.innerHTML = historico
+  tbody.innerHTML = items
     .map((h) => {
       const d = new Date(h.fecha);
-      const fecha = d.toLocaleDateString("es-ES");
-      const hora = d.toLocaleTimeString("es-ES");
-      const estadoClass =
-        /error/i.test(h.estado) || /cancel/i.test(h.estado)
+      const fecha = isNaN(d) ? h.fecha : d.toLocaleDateString("es-ES");
+      const hora = isNaN(d) ? "" : d.toLocaleTimeString("es-ES");
+      const cls = /enviado/i.test(h.estado)
+        ? "estado-enviado"
+        : /error|cancel/i.test(h.estado)
           ? "estado-error"
-          : /compart|envi|listo/i.test(h.estado)
-            ? "estado-enviado"
-            : "";
+          : "";
       return `<tr>
-        <td>${escapeHtml(fecha)}</td>
-        <td>${escapeHtml(hora)}</td>
-        <td>${escapeHtml(h.usuario || "")}</td>
-        <td>${escapeHtml(h.registro || "")}</td>
-        <td>${escapeHtml(h.pdf || "")}</td>
-        <td class="${estadoClass}">${escapeHtml(h.estado || "")}</td>
-        <td>${escapeHtml(h.observaciones || "")}</td>
+        <td>${fecha}</td><td>${hora}</td><td>${h.usuario || ""}</td>
+        <td>${h.registro || ""}</td><td>${h.pdf || ""}</td>
+        <td class="${cls}">${h.estado || ""}</td><td>${h.observaciones || ""}</td>
       </tr>`;
     })
     .join("");
 }
 
-document.getElementById("btn-clear-hist").addEventListener("click", async () => {
-  const ok = await confirmDialog("Vaciar histórico", "¿Borrar el histórico local de esta tablet?");
-  if (!ok) return;
-  historico = [];
-  saveJSON(STORAGE_KEYS.historico, historico);
-  renderHistorico();
-  toast("Histórico vacío", "ok");
-});
-
 /* —— Config —— */
 function renderConfig() {
-  const form = document.getElementById("config-form");
-  const dest = (config.destinatarios || []).slice(0, 4);
+  const cfg = loadConfig();
+  const dest = cfg.destinatarios || ["", "", "", ""];
   while (dest.length < 4) dest.push("");
-  form.innerHTML = `
+  document.getElementById("config-form").innerHTML = `
     <label>Usuario tablet</label>
-    <input id="cfg-usuario" value="${escapeAttr(usuarioActual())}" />
-    <label>Asunto correo</label>
-    <input id="cfg-asunto" value="${escapeAttr(config.asunto || "")}" />
-    <label>Texto correo</label>
-    <textarea id="cfg-cuerpo" rows="3">${escapeHtml(config.cuerpo || "")}</textarea>
-    <label>Destinatario 1</label>
-    <input id="cfg-d1" value="${escapeAttr(dest[0])}" />
-    <label>Destinatario 2</label>
-    <input id="cfg-d2" value="${escapeAttr(dest[1])}" />
-    <label>Destinatario 3</label>
-    <input id="cfg-d3" value="${escapeAttr(dest[2])}" />
-    <label>Destinatario 4</label>
-    <input id="cfg-d4" value="${escapeAttr(dest[3])}" />
-    <label>Copia</label>
-    <input id="cfg-cc" value="${escapeAttr(config.copia || "")}" />
-    <label>Nota carpeta PDF</label>
-    <input id="cfg-nota" value="${escapeAttr(config.carpetaPdfNota || "")}" readonly />
+    <input id="cfg-usuario" value="${localStorage.getItem("rmp_usuario") || "tablet"}" />
+    <label>Asunto (opcional, global)</label>
+    <input id="cfg-asunto" value="${cfg.asunto || ""}" placeholder="Vacío = el del registro" />
+    <label>Texto correo (opcional)</label>
+    <textarea id="cfg-cuerpo" rows="3" placeholder="Vacío = el del registro">${cfg.cuerpo || ""}</textarea>
+    <label>Destinatario 1 (override)</label><input id="cfg-d1" value="${dest[0] || ""}" />
+    <label>Destinatario 2</label><input id="cfg-d2" value="${dest[1] || ""}" />
+    <label>Destinatario 3</label><input id="cfg-d3" value="${dest[2] || ""}" />
+    <label>Destinatario 4</label><input id="cfg-d4" value="${dest[3] || ""}" />
+    <label>Copia</label><input id="cfg-cc" value="${cfg.copia || ""}" />
   `;
 }
 
 document.getElementById("btn-save-config").addEventListener("click", () => {
-  localStorage.setItem("rmp_usuario", document.getElementById("cfg-usuario").value.trim() || "tablet");
-  config = {
-    ...config,
+  localStorage.setItem(
+    "rmp_usuario",
+    document.getElementById("cfg-usuario").value.trim() || "tablet"
+  );
+  saveConfig({
     asunto: document.getElementById("cfg-asunto").value.trim(),
     cuerpo: document.getElementById("cfg-cuerpo").value,
     destinatarios: [
@@ -558,71 +360,16 @@ document.getElementById("btn-save-config").addEventListener("click", () => {
       document.getElementById("cfg-d4").value.trim(),
     ],
     copia: document.getElementById("cfg-cc").value.trim(),
-  };
-  saveJSON(STORAGE_KEYS.config, config);
+  });
   toast("Configuración guardada", "ok");
 });
 
-/* —— Listas —— */
-const LIST_LABELS = {
-  marcas: "Marcas",
-  granjas: "Granjas",
-  checks: "Check",
-  tiposMarchamo: "Tipo de marchamo",
-  tiposEtiqueta: "Tipo de etiqueta",
-  encargados: "Encargados",
-  supervisores: "Supervisores",
-};
-
-function renderListas() {
-  const form = document.getElementById("listas-form");
-  form.innerHTML = Object.keys(LIST_LABELS)
-    .map((key) => {
-      const text = (listas[key] || []).join("\n");
-      return `<div>
-        <h3>${LIST_LABELS[key]}</h3>
-        <textarea data-list="${key}">${escapeHtml(text)}</textarea>
-      </div>`;
-    })
-    .join("");
-}
-
-function parseListText(text) {
-  return text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
-
-document.getElementById("btn-save-listas").addEventListener("click", () => {
-  document.querySelectorAll("#listas-form textarea").forEach((ta) => {
-    listas[ta.dataset.list] = parseListText(ta.value);
-  });
-  saveJSON(STORAGE_KEYS.listas, listas);
-  renderRegister(REGISTROS.principal);
-  renderRegister(REGISTROS.vap);
-  toast("Listas guardadas", "ok");
-});
-
-document.getElementById("btn-reset-listas").addEventListener("click", async () => {
-  const ok = await confirmDialog("Restaurar listas", "¿Volver a las listas por defecto del Excel?");
-  if (!ok) return;
-  listas = structuredClone(DEFAULT_LISTAS);
-  saveJSON(STORAGE_KEYS.listas, listas);
-  renderListas();
-  renderRegister(REGISTROS.principal);
-  renderRegister(REGISTROS.vap);
-  toast("Listas restauradas", "ok");
-});
-
-/* —— Init —— */
+/* —— Launchers / SW —— */
 function init() {
-  renderRegister(REGISTROS.principal);
-  renderRegister(REGISTROS.vap);
+  renderHub();
   renderConfig();
-  renderListas();
-  renderHistorico();
-
+  refreshBridge();
+  setInterval(refreshBridge, 15000);
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }

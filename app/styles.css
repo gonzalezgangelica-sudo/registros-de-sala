@@ -64,6 +64,102 @@ textarea {
   color: var(--text-muted);
 }
 
+.bridge-status {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+  background: #fff;
+  white-space: nowrap;
+}
+
+.bridge-status.ok {
+  color: var(--ok);
+  border-color: #9ccc9c;
+  background: #f0fff2;
+}
+
+.bridge-status.bad {
+  color: var(--danger);
+  border-color: #e0a0a0;
+  background: #fff5f5;
+}
+
+.muted {
+  color: #666;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.hub-card {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  min-height: 110px;
+  border-radius: 2px;
+}
+
+.hub-card:hover,
+.hub-card:focus {
+  outline: 2px solid #2f5d8a;
+  outline-offset: 1px;
+}
+
+.hub-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.hub-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.hub-card .src {
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
+  color: #888;
+}
+
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.simple-table th,
+.simple-table td {
+  border: 1px solid var(--border);
+  padding: 0.25rem;
+  vertical-align: middle;
+}
+
+.simple-table th {
+  background: var(--label-bg);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.simple-table input,
+.simple-table select {
+  width: 100%;
+  min-height: var(--touch);
+  border: none;
+  background: transparent;
+  padding: 0.35rem;
+  font: inherit;
+}
+
 .tabs {
   display: flex;
   gap: 0.25rem;

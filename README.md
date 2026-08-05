@@ -1,55 +1,49 @@
-﻿# Registros de sala — Marcas propias (tablet)
+﻿# Registros de sala (tablet Android + Outlook PC)
 
-App web (PWA) equivalente al Excel `Registro de marcas propias V2.xlsm`, pensada para **tablet Android** (Chrome), con el mismo estilo de formulario Stolt.
+Un **hub** con los **7 registros** de `Requisitos sala\Nuevos`.  
+Al pulsar **Enviar** se genera el **PDF** y se manda por **Outlook del PC con el adjunto**, igual que los `.xlsm`.
 
-## Qué incluye
+## Cómo funciona el envío
 
-- **Línea principal** y **Línea VAP** (rejilla 8 columnas, mismos campos)
-- Cabecera / pie de notas del Excel
-- Desplegables (hoja LISTAS) editables en la app
-- Config de correo (hoja CONFIG)
-- Botón **Enviar**: genera PDF → compartir/descargar → abre correo → limpia formulario → histórico
-- Funciona offline tras la primera carga (service worker)
+1. En el **PC** (con Outlook instalado) lanzas el servidor.
+2. En la **tablet** abres la URL del PC (misma red).
+3. Rellenas un registro → **Enviar**.
+4. El PC genera/recibe el PDF y Outlook lo envía **con el archivo adjunto**.
 
-## Cómo lanzar (PC + tablet)
+Sin el servidor del PC, la tablet puede compartir/descargar el PDF (fallback).
 
-### Opción A — Script (recomendado)
+## Lanzar
 
-En PowerShell, desde la raíz del repo:
+Doble clic en **`lanzar-tablet.bat`** (o `.\lanzar-tablet.ps1`).
 
-```powershell
-.\lanzar-tablet.ps1
-```
+- PC: `http://127.0.0.1:8080/`
+- Tablet: `http://<IP-del-PC>:8080/`
 
-Muestra la URL del PC, la URL de red para la tablet y un QR. Mantén esa ventana abierta.
+El indicador verde **Outlook PC: listo** confirma el puente.
 
-En la tablet (misma Wi‑Fi/red): abre Chrome → URL o QR → menú → **Añadir a la pantalla de inicio**.
+## Registros incluidos
 
-### Opción B — Servidor manual
+| Registro | Origen Excel |
+|----------|----------------|
+| Marcas propias / Protocolo 1 | `Registro de marcas propias V2.xlsm` |
+| Detector de metales | `comprobación detector de metales.xlsm` |
+| Lava útiles | `Registro_LavaUtiles.xlsm` |
+| Calidad del transporte | `Supervisión de la calidad del transporte R4.xlsm` |
+| Estado de los palés | `Supervisión del estado de los palés R2.xlsm` |
+| Control de cuchillos | `Control de cuchillos produccion R3.xlsm` |
+| Control de cutters | `Control de cutters R4.xlsm` |
 
-```powershell
-cd app
-python -m http.server 8080 --bind 0.0.0.0
-```
-
-PC: `http://localhost:8080` · Tablet: `http://<IP-del-PC>:8080`
-
-> En Android no hay Outlook VBA: el PDF se genera en la tablet y se adjunta/comparte desde el cliente de correo instalado.
-
-## Estructura
+## Carpetas
 
 ```
-app/
-  index.html
-  styles.css
-  app.js
-  data.js
-  manifest.json
-  sw.js
-  assets/     # cabeceras, pie, iconos
-  vendor/     # html2canvas + jspdf (offline)
+app/                 Hub web + server.py (puente Outlook)
+plantillas/          Generador .xlsx opcional (sin botón mail)
+lanzar-tablet.bat
+lanzar-tablet.ps1
 ```
 
-## Nota
+## Requisitos PC
 
-Los borradores, listas, config e histórico se guardan en **localStorage de la tablet**. No sustituye todavía el guardado en `K:\...\Registros` ni el envío automático de Outlook de escritorio.
+- Python 3
+- Outlook de escritorio configurado
+- `pywin32` (`pip install pywin32`)

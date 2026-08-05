@@ -1,0 +1,31 @@
+{
+  "id": "ejemplo_registro_2",
+  "nombre": "EJEMPLO — Copia este JSON y cambia campos para el registro 2 de 7",
+  "codigo": "F7.x-xx-xx-xx",
+  "revision": "1",
+  "fechaDoc": "08/26",
+  "columnas": 8,
+  "listas": {
+    "siNo": ["Sí", "No", "N/A"],
+    "turnos": ["Mañana", "Tarde", "Noche"],
+    "operarios": ["Operario 1", "Operario 2", "Operario 3"]
+  },
+  "hojas": [
+    {
+      "nombre": "REGISTRO",
+      "tituloLinea": "Registro ejemplo",
+      "hojaMeta": "1 de 1",
+      "campos": [
+        { "key": "fecha", "label": "FECHA", "type": "date", "obligatorio": true },
+        { "key": "turno", "label": "TURNO", "type": "select", "list": "turnos", "obligatorio": true },
+        { "key": "check", "label": "CHECK", "type": "select", "list": "siNo", "obligatorio": true },
+        { "key": "operario", "label": "OPERARIO", "type": "select", "list": "operarios", "obligatorio": true },
+        { "key": "observaciones", "label": "OBSERVACIONES", "type": "text", "obligatorio": false }
+      ]
+    }
+  ],
+  "notasPie": [
+    "Sustituye este ejemplo por la definición real del registro 2.",
+    "Luego ejecuta: python plantillas/generar_xlsx.py"
+  ]
+}

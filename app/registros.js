@@ -1,0 +1,145 @@
+/** Catálogo de los 7 registros de sala (fuentes .xlsm) */
+export const REGISTROS_CATALOGO = [
+  {
+    id: "marcas_propias",
+    nombre: "Marcas propias / Protocolo 1",
+    fuente: "Registro de marcas propias V2.xlsm",
+    descripcion: "Línea principal y VAP — seguimiento especificaciones",
+    status: "ready",
+    panel: "marcas",
+  },
+  {
+    id: "detector_metales",
+    nombre: "Comprobación detector de metales",
+    fuente: "comprobación detector de metales.xlsm",
+    descripcion: "VAP / Rechazo / Valorización — testigos Fe / No Fe / Inox",
+    status: "ready",
+    panel: "detector",
+  },
+  {
+    id: "lava_utiles",
+    nombre: "Lava útiles",
+    fuente: "Registro_LavaUtiles.xlsm",
+    descripcion: "Temperatura calderín / cuba lavado",
+    status: "ready",
+    panel: "lava",
+  },
+  {
+    id: "transporte",
+    nombre: "Calidad del transporte",
+    fuente: "Supervisión de la calidad del transporte R4.xlsm",
+    descripcion: "Transportista, matrículas, limpieza, frío",
+    status: "ready",
+    panel: "transporte",
+  },
+  {
+    id: "pales",
+    nombre: "Estado de los palés",
+    fuente: "Supervisión del estado de los palés R2.xlsm",
+    descripcion: "Control diario mañana/tarde de palés en cámara",
+    status: "ready",
+    panel: "pales",
+  },
+  {
+    id: "cuchillos",
+    nombre: "Control de cuchillos producción",
+    fuente: "Control de cuchillos produccion R3.xlsm",
+    descripcion: "Recuento diario de cuchillos en sala",
+    status: "ready",
+    panel: "cuchillos",
+  },
+  {
+    id: "cutters",
+    nombre: "Control de cutters",
+    fuente: "Control de cutters R4.xlsm",
+    descripcion: "Expedición / Flejadora / Packing / Envío avión",
+    status: "ready",
+    panel: "cutters",
+  },
+];
+
+/** Destinatarios por defecto (extraídos de los Excel) */
+export const MAIL_DEFAULTS = {
+  marcas_propias: {
+    asunto: "Registro Seguimiento Marcas Propias",
+    cuerpo: "Buenos días, se adjunta el registro para su revisión.",
+    to: [
+      "foodplant.ssf@stolt.com",
+      "j.reylago@stolt.com",
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+    ],
+    cc: ["ma.riveira.da.costa@stolt.com"],
+  },
+  detector_metales: {
+    asunto: "Registro Comprobación detector de metales",
+    cuerpo: "Buenos días, se adjunta el registro de comprobación del detector de metales.",
+    to: [
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+      "j.reylago@stolt.com",
+      "Foodplant.SSF@stolt.com",
+      "an.gonzalez@stolt.com",
+      "ma.riveira.da.costa@stolt.com",
+    ],
+    cc: [],
+  },
+  lava_utiles: {
+    asunto: "Registro Lava útiles",
+    cuerpo: "Buenos días, se adjunta el registro de lava útiles.",
+    to: [
+      "foodplant.ssf@stolt.com",
+      "j.reylago@stolt.com",
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+      "a.gonzalez@stolt.com",
+    ],
+    cc: [],
+  },
+  transporte: {
+    asunto: "Histórico limpieza / calidad transporte",
+    cuerpo: "Buenos días, se adjunta el registro de supervisión de calidad del transporte.",
+    to: [
+      "foodplant.ssf@stolt.com",
+      "j.reylago@stolt.com",
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+    ],
+    cc: ["ma.riveira.da.costa@stolt.com"],
+  },
+  pales: {
+    asunto: "Registro Supervisión estado de palés",
+    cuerpo: "Buenos días, se adjunta el registro de supervisión del estado de los palés.",
+    to: [
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+      "j.reylago@stolt.com",
+      "Foodplant.SSF@stolt.com",
+    ],
+    cc: [],
+  },
+  cuchillos: {
+    asunto: "Registro Control de cuchillos producción",
+    cuerpo: "Buenos días, se adjunta el registro de control de cuchillos.",
+    to: [
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+      "j.reylago@stolt.com",
+      "Foodplant.SSF@stolt.com",
+    ],
+    cc: ["an.gonzalez@stolt.com", "ma.riveira.da.costa@stolt.com"],
+  },
+  cutters: {
+    asunto: "Registro Control de Cutters",
+    cuerpo: "Buenos días, se adjunta el registro de control de cutters.",
+    to: [
+      "m.formoso@external.stolt.com",
+      "r.nunez@stolt.com",
+      "j.reylago@stolt.com",
+      "Foodplant.SSF@stolt.com",
+      "an.gonzalez@stolt.com",
+      "ma.riveira.da.costa@stolt.com",
+    ],
+    cc: [],
+  },
+};
