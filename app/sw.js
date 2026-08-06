@@ -1,4 +1,4 @@
-const CACHE = "rmp-v3";
+const CACHE = "rmp-v4-lava";
 const ASSETS = [
   "./",
   "./index.html",

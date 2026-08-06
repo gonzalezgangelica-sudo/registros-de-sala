@@ -370,8 +370,14 @@ function init() {
   renderConfig();
   refreshBridge();
   setInterval(refreshBridge, 15000);
+  // Evitar caché antigua del service worker (impedía ver cambios de Lava útiles)
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.unregister());
+    });
+    if (window.caches && caches.keys) {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+    }
   }
 }
 

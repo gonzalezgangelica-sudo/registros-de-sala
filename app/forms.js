@@ -336,34 +336,62 @@ function renderMarcas(root, state, hooks) {
 }
 
 function renderLava(root, state, hooks) {
-  const operarios = ["Monica", "Maika", "Maritina", "Tucho", "Pepe", "Leti"];
   const rows = state.filas
     .map(
       (f, i) => `<tr>
       <th>${esc(f.equipo)}</th>
-      <td><input data-i="${i}" data-k="temp" value="${esc(f.temp)}" placeholder="ºC"/></td>
-      <td><input type="date" data-i="${i}" data-k="fecha" value="${esc(f.fecha)}"/></td>
-      <td><input type="time" data-i="${i}" data-k="hora" value="${esc(f.hora)}"/></td>
-      <td><select data-i="${i}" data-k="realizado">${opts(operarios, f.realizado)}</select></td>
+      <td><input class="lava-temp" data-i="${i}" data-k="temp" value="${esc(f.temp)}" placeholder="ºC" inputmode="decimal"/></td>
+      <td><input class="lava-fecha" type="date" data-i="${i}" data-k="fecha" value="${esc(f.fecha)}"/></td>
+      <td><input class="lava-hora" type="time" data-i="${i}" data-k="hora" step="60" value="${esc(f.hora)}"/></td>
+      <td><input class="lava-nombre" type="text" data-i="${i}" data-k="realizado" value="${esc(f.realizado)}" placeholder="Escribe el nombre" autocomplete="off"/></td>
     </tr>`
     )
     .join("");
 
   root.innerHTML = `
-    <article class="form-sheet">
+    <article class="form-sheet" id="lava-sheet">
       ${excelHeaderHtml("lava_utiles")}
       <div class="line-title">Registro lava útiles</div>
+      <p class="muted">Al escribir la temperatura se rellenan sola la fecha y la hora. En «Realizado por» escribe el nombre.</p>
       <div class="grid-wrap"><table class="simple-table">
         <thead><tr><th>TESTIGO</th><th>TEMP ºC</th><th>FECHA</th><th>HORA</th><th>REALIZADO POR</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       <div class="form-grid" style="margin-top:0.75rem">
         <label>Observaciones</label><input id="lava-obs" value="${esc(state.observaciones)}" />
-        <label>Supervisado por</label><input id="lava-sup" value="${esc(state.supervisado)}" />
+        <label>Supervisado por</label><input id="lava-sup" value="${esc(state.supervisado)}" placeholder="Escribe el nombre"/>
       </div>
       ${excelFooterHtml("lava_utiles")}
       ${actionsHtml()}
     </article>`;
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const stampNow = () => {
+    const d = new Date();
+    return {
+      fecha: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      hora: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    };
+  };
+
+  const sheet = root.querySelector("#lava-sheet");
+  const autoFechaHora = (tempInput) => {
+    const raw = String(tempInput.value || "").trim();
+    if (!raw) return;
+    const i = tempInput.getAttribute("data-i");
+    const fechaEl = sheet.querySelector(`.lava-fecha[data-i="${i}"]`);
+    const horaEl = sheet.querySelector(`.lava-hora[data-i="${i}"]`);
+    const { fecha, hora } = stampNow();
+    if (fechaEl) fechaEl.value = fecha;
+    if (horaEl) horaEl.value = hora;
+  };
+
+  sheet.addEventListener("input", (ev) => {
+    if (ev.target && ev.target.classList.contains("lava-temp")) autoFechaHora(ev.target);
+  });
+  sheet.addEventListener("change", (ev) => {
+    if (ev.target && ev.target.classList.contains("lava-temp")) autoFechaHora(ev.target);
+  });
 
   const collect = () => {
     const filas = state.filas.map((f) => ({ ...f }));

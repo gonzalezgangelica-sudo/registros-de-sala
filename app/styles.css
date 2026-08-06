@@ -151,13 +151,30 @@ textarea {
 }
 
 .simple-table input,
-.simple-table select {
+.simple-table select,
+.simple-table textarea {
   width: 100%;
   min-height: var(--touch);
   border: none;
-  background: transparent;
+  background: #fff;
   padding: 0.35rem;
   font: inherit;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.simple-table .lava-nombre,
+.simple-table .lava-temp,
+.simple-table .lava-fecha,
+.simple-table .lava-hora {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.simple-table .lava-nombre {
+  text-align: left;
+  padding-left: 0.5rem;
+  min-width: 140px;
 }
 
 .tabs {
