@@ -60,14 +60,14 @@ async function refreshBridge() {
   const el = document.getElementById("bridge-status");
   const b = await checkBridge();
   if (b.ok && b.outlook) {
-    el.textContent = "Outlook PC: listo (envío con adjunto)";
+    el.textContent = "Outlook PC: listo (envío automático)";
     el.className = "bridge-status ok";
   } else if (b.ok) {
-    el.textContent = "Servidor OK, pero Outlook no disponible";
-    el.className = "bridge-status bad";
+    el.textContent = "Servidor OK · correo: compartir en tablet";
+    el.className = "bridge-status ok";
   } else {
-    el.textContent = "Sin puente PC — usa lanzar-tablet.bat";
-    el.className = "bridge-status bad";
+    el.textContent = "Modo tablet: Enviar = compartir PDF";
+    el.className = "bridge-status ok";
   }
 }
 

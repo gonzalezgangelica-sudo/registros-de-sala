@@ -1,4 +1,8 @@
-/** Envío de correo con PDF adjunto (puente Outlook del PC o compartir en tablet) */
+/**
+ * Envío de PDF:
+ * 1) Si hay puente Outlook en PC -> envío automático
+ * 2) Si no -> compartir PDF con Outlook/Gmail de la tablet (V2 sin PC)
+ */
 
 export async function checkBridge() {
   try {
@@ -19,10 +23,6 @@ function blobToBase64(blob) {
   });
 }
 
-/**
- * Intenta enviar como el Excel: PDF adjunto vía Outlook del PC.
- * Si no hay puente, usa Web Share / descarga.
- */
 export async function enviarConAdjunto({
   blob,
   filename,
@@ -56,15 +56,14 @@ export async function enviarConAdjunto({
     return { modo: "outlook", estado: "Enviado", data };
   }
 
-  // Fallback tablet sin puente: compartir archivo (Gmail/Outlook app)
   const file = new File([blob], filename, { type: "application/pdf" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({
       files: [file],
       title: subject,
-      text: body,
+      text: `${body || ""}\n\nPara: ${(to || []).join("; ")}\nCC: ${(cc || []).join("; ")}`,
     });
-    return { modo: "share", estado: "Compartido" };
+    return { modo: "share", estado: "Compartido (elige Outlook/Gmail)" };
   }
 
   const url = URL.createObjectURL(blob);
@@ -83,5 +82,5 @@ export async function enviarConAdjunto({
     `${body || ""}\n\nPDF: ${filename}\n(Adjunta el PDF descargado.)`
   )}`;
 
-  return { modo: "download", estado: "PDF listo / mail abierto" };
+  return { modo: "download", estado: "PDF descargado / mail abierto" };
 }

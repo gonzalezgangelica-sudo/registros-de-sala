@@ -1,9 +1,22 @@
-﻿# Registros de sala (tablet Android + Outlook PC)
+﻿# Registros de sala (tablet Android)
 
-**Manual para usuarios de planta:** [`MANUAL_USUARIO.md`](MANUAL_USUARIO.md)
+**Manual usuarios:** [`MANUAL_USUARIO.md`](MANUAL_USUARIO.md) · PDF: [`MANUAL_USUARIO.pdf`](MANUAL_USUARIO.pdf)
 
-Un **hub** con los **7 registros** de `Requisitos sala\Nuevos`.  
-Al pulsar **Enviar** se genera el **PDF** y se manda por **Outlook del PC con el adjunto**, igual que los `.xlsm`.
+## V2 sin publicaciones (recomendado si no quieres Power Apps / servidor)
+
+Ver **[`V2_SIN_PUBLICAR.md`](V2_SIN_PUBLICAR.md)**.
+
+```powershell
+.\empaquetar-tablet.ps1
+```
+
+Copia `dist\RegistrosSala-portable.zip` a la tablet → servidor local → Chrome → Enviar (compartir PDF).
+
+## V1 — Puente Outlook en el PC (envío automático)
+
+Doble clic en **`lanzar-tablet.bat`**. La tablet usa la URL de red del PC.
+
+Un **hub** con los **7 registros**. Sin macros VBA.
 
 ## Cómo funciona el envío
 

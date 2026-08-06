@@ -1,5 +1,3 @@
-app/data/
-plantillas/_analisis/
-__pycache__/
-*.pyc
-.DS_Store
+dist/
+*.zip
+_accent_test.pdf
