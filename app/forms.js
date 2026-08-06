@@ -1,20 +1,7 @@
 /** Formularios tablet de los registros (equivalente visual simplificado de cada .xlsm) */
 
 import { REGISTROS, DEFAULT_LISTAS } from "./data.js";
-
-/** Cabeceras originales extraídas de cada .xlsm */
-export const HEADERS = {
-  marcas_propias_principal: "assets/headers/marcas_principal.png",
-  marcas_propias_vap: "assets/headers/marcas_vap.png",
-  marcas_propias_pie: "assets/headers/marcas_pie.png",
-  detector_metales: "assets/headers/detector_metales.png",
-  lava_utiles: "assets/headers/lava_utiles.png",
-  transporte: "assets/headers/transporte.png",
-  transporte_pie: "assets/headers/transporte_pie.png",
-  pales: "assets/headers/pales.png",
-  cuchillos: "assets/headers/cuchillos.png",
-  cutters: "assets/headers/cutters.png",
-};
+import { excelHeaderHtml, excelFooterHtml } from "./headers.js";
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const MESES = [
@@ -38,16 +25,6 @@ function esc(s) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
-}
-
-function headerHtml(src, alt = "Cabecera formulario") {
-  if (!src) return "";
-  return `<div class="doc-header"><img src="${src}" alt="${esc(alt)}" /></div>`;
-}
-
-function footerHtml(src, alt = "Pie / notas") {
-  if (!src) return "";
-  return `<div class="footer-notes"><img src="${src}" alt="${esc(alt)}" /></div>`;
 }
 
 function opts(list, selected = "") {
@@ -320,11 +297,10 @@ function renderMarcas(root, state, hooks) {
     rows += `<tr><th class="${labelClass}">${esc(campo.label)}</th>${cells}</tr>`;
   }
 
-  const headerSrc =
-    vista === "vap" ? HEADERS.marcas_propias_vap : HEADERS.marcas_propias_principal;
+  const headerKey = vista === "vap" ? "marcas_propias_vap" : "marcas_propias_principal";
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(headerSrc, reg.tituloLinea)}
+      ${excelHeaderHtml(headerKey)}
       <div class="sheet-actions" style="justify-content:flex-start">
         <button type="button" class="btn ${vista === "principal" ? "btn-primary" : ""}" data-vista="principal">Línea principal</button>
         <button type="button" class="btn ${vista === "vap" ? "btn-primary" : ""}" data-vista="vap">Línea VAP</button>
@@ -336,7 +312,7 @@ function renderMarcas(root, state, hooks) {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      ${footerHtml(HEADERS.marcas_propias_pie, "Notas check origen")}
+      ${excelFooterHtml(headerKey)}
       ${actionsHtml()}
     </article>`;
 
@@ -375,7 +351,7 @@ function renderLava(root, state, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.lava_utiles, "Registro lava útiles")}
+      ${excelHeaderHtml("lava_utiles")}
       <div class="line-title">Registro lava útiles</div>
       <div class="grid-wrap"><table class="simple-table">
         <thead><tr><th>TESTIGO</th><th>TEMP ºC</th><th>FECHA</th><th>HORA</th><th>REALIZADO POR</th></tr></thead>
@@ -385,6 +361,7 @@ function renderLava(root, state, hooks) {
         <label>Observaciones</label><input id="lava-obs" value="${esc(state.observaciones)}" />
         <label>Supervisado por</label><input id="lava-sup" value="${esc(state.supervisado)}" />
       </div>
+      ${excelFooterHtml("lava_utiles")}
       ${actionsHtml()}
     </article>`;
 
@@ -421,7 +398,7 @@ function renderTransporte(root, state, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.transporte, "Calidad del transporte")}
+      ${excelHeaderHtml("transporte")}
       <div class="line-title">Supervisión calidad del transporte</div>
       <div class="grid-wrap"><table class="simple-table">
         <thead><tr>
@@ -434,7 +411,7 @@ function renderTransporte(root, state, hooks) {
         <label>Observaciones</label><input id="tr-obs" value="${esc(state.observaciones)}" />
         <label>Firma supervisor</label><input id="tr-firma" value="${esc(state.firma)}" />
       </div>
-      ${footerHtml(HEADERS.transporte_pie, "Notas transporte")}
+      ${excelFooterHtml("transporte")}
       ${actionsHtml()}
     </article>`;
 
@@ -489,7 +466,7 @@ function renderDetector(root, state, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.detector_metales, "Detector de metales")}
+      ${excelHeaderHtml("detector_metales")}
       <div class="line-title">Comprobación detector de metales</div>
       ${blocks}
       ${actionsHtml()}
@@ -531,7 +508,7 @@ function renderMonthSimple(root, state, id, title, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.pales, title)}
+      ${excelHeaderHtml("pales")}
       <div class="line-title">${esc(title)}</div>
       <div class="form-grid">
         <label>Mes</label><select id="m-mes">${opts(MESES, state.mes)}</select>
@@ -582,7 +559,7 @@ function renderCuchillos(root, state, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.cuchillos, "Control de cuchillos")}
+      ${excelHeaderHtml("cuchillos")}
       <div class="line-title">Control de cuchillos producción</div>
       <div class="form-grid">
         <label>Mes</label><select id="c-mes">${opts(MESES, state.mes)}</select>
@@ -631,7 +608,7 @@ function renderCutters(root, state, hooks) {
 
   root.innerHTML = `
     <article class="form-sheet">
-      ${headerHtml(HEADERS.cutters, "Control de cutters")}
+      ${excelHeaderHtml("cutters")}
       <div class="line-title">Control de cutters</div>
       <div class="form-grid">
         <label>Mes</label><select id="cu-mes">${opts(MESES, state.mes)}</select>
