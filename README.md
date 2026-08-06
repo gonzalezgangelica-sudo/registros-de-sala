@@ -1,5 +1,7 @@
 ﻿# Registros de sala (tablet Android + Outlook PC)
 
+**Manual para usuarios de planta:** [`MANUAL_USUARIO.md`](MANUAL_USUARIO.md)
+
 Un **hub** con los **7 registros** de `Requisitos sala\Nuevos`.  
 Al pulsar **Enviar** se genera el **PDF** y se manda por **Outlook del PC con el adjunto**, igual que los `.xlsm`.
 
