@@ -56,17 +56,23 @@ def split_emails(value) -> list[str]:
 
 
 def send_outlook(to_list, cc_list, subject, body, pdf_path: Path) -> None:
+    """Envía con Outlook COM. CoInitialize es obligatorio en hilos del servidor."""
+    import pythoncom  # type: ignore
     import win32com.client  # type: ignore
 
-    outlook = win32com.client.Dispatch("Outlook.Application")
-    mail = outlook.CreateItem(0)
-    mail.To = ";".join(to_list)
-    if cc_list:
-        mail.CC = ";".join(cc_list)
-    mail.Subject = subject or "Registro sala"
-    mail.Body = body or "Se adjunta el registro para su revisión."
-    mail.Attachments.Add(str(pdf_path))
-    mail.Send()
+    pythoncom.CoInitialize()
+    try:
+        outlook = win32com.client.Dispatch("Outlook.Application")
+        mail = outlook.CreateItem(0)
+        mail.To = ";".join(to_list)
+        if cc_list:
+            mail.CC = ";".join(cc_list)
+        mail.Subject = subject or "Registro sala"
+        mail.Body = body or "Se adjunta el registro para su revisión."
+        mail.Attachments.Add(str(pdf_path.resolve()))
+        mail.Send()
+    finally:
+        pythoncom.CoUninitialize()
 
 
 class Handler(BaseHTTPRequestHandler):
