@@ -16,13 +16,36 @@
     <script src="vendor/jspdf.umd.min.js"></script>
   </head>
   <body>
+    <div id="login-screen" class="login-screen" hidden>
+      <form class="login-card" id="login-form" autocomplete="on">
+        <div class="login-brand">Stolt Sea Farm</div>
+        <h1>Registros de sala</h1>
+        <p class="muted">Acceso con usuario y contraseña</p>
+        <label for="login-user">Usuario</label>
+        <input id="login-user" name="username" type="text" autocomplete="username" required />
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" name="password" type="password" autocomplete="current-password" required />
+        <p class="login-error" id="login-error" hidden></p>
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.75rem">
+          Entrar
+        </button>
+        <p class="muted login-hint">
+          Por defecto: <code>sala</code> / <code>sala123</code>
+          (admin: <code>admin</code> / <code>admin123</code>)
+        </p>
+      </form>
+    </div>
+
+    <div id="app-shell" hidden>
     <header class="app-toolbar">
       <div class="brand">Stolt Sea Farm · Registros de sala</div>
+      <div id="session-user" class="bridge-status" title="Usuario conectado">—</div>
       <div id="bridge-status" class="bridge-status">Comprobando Outlook…</div>
       <nav class="tabs" role="tablist">
         <button class="tab active" data-panel="hub" type="button">Inicio</button>
         <button class="tab" data-panel="historico" type="button">Histórico</button>
         <button class="tab" data-panel="config" type="button">Config</button>
+        <button class="btn" id="btn-logout" type="button">Salir</button>
       </nav>
     </header>
 
@@ -83,8 +106,22 @@
             los del Excel original.
           </p>
         </div>
+        <div class="card" id="users-card">
+          <h2>Usuarios de acceso</h2>
+          <p class="muted">
+            Una línea por usuario: <code>usuario;contraseña;nombre;admin</code>
+            (admin = si/no). Solo visible si entras como administrador.
+          </p>
+          <textarea id="users-editor" rows="8" style="width:100%;min-height:160px;font:inherit;padding:0.5rem"></textarea>
+          <div class="sheet-actions">
+            <button type="button" class="btn btn-primary" id="btn-save-users">
+              Guardar usuarios
+            </button>
+          </div>
+        </div>
       </section>
     </main>
+    </div>
 
     <div id="pdf-root" aria-hidden="true"></div>
     <div class="toast" id="toast"></div>

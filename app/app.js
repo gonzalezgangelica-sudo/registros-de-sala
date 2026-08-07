@@ -1,6 +1,13 @@
 import { REGISTROS_CATALOGO, MAIL_DEFAULTS } from "./registros.js";
 import { checkBridge, enviarConAdjunto } from "./mail.js";
-import { renderForm, saveState, emptyState } from "./forms.js";
+import { renderForm } from "./forms.js";
+import {
+  getSession,
+  login,
+  clearSession,
+  loadUsers,
+  saveUsers,
+} from "./auth.js";
 
 const toastEl = document.getElementById("toast");
 let toastTimer;
@@ -43,10 +50,47 @@ function showPanel(name) {
   if (panel) panel.classList.add("active");
 }
 
+function updateSessionUI() {
+  const s = getSession();
+  const el = document.getElementById("session-user");
+  if (!el) return;
+  if (s) {
+    el.textContent = s.nombre || s.user;
+    el.title = `Conectado como ${s.user}${s.admin ? " (admin)" : ""}`;
+  } else {
+    el.textContent = "—";
+  }
+  const usersCard = document.getElementById("users-card");
+  if (usersCard) usersCard.hidden = !(s && s.admin);
+}
+
+function showApp() {
+  document.getElementById("login-screen").hidden = true;
+  document.getElementById("app-shell").hidden = false;
+  updateSessionUI();
+  renderHub();
+  renderConfig();
+  renderUsersEditor();
+  refreshBridge();
+}
+
+function showLogin() {
+  document.getElementById("app-shell").hidden = true;
+  document.getElementById("login-screen").hidden = false;
+  document.getElementById("login-error").hidden = true;
+  document.getElementById("login-pass").value = "";
+  setTimeout(() => document.getElementById("login-user").focus(), 50);
+}
+
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
+    if (!getSession()) return showLogin();
     showPanel(tab.dataset.panel);
     if (tab.dataset.panel === "historico") renderHistorico();
+    if (tab.dataset.panel === "config") {
+      renderConfig();
+      renderUsersEditor();
+    }
   });
 });
 
@@ -55,9 +99,36 @@ document.getElementById("btn-back-hub").addEventListener("click", () => {
   showPanel("hub");
 });
 
+document.getElementById("btn-logout").addEventListener("click", async () => {
+  const ok = await confirmDialog("Salir", "¿Cerrar sesión en esta tablet?");
+  if (!ok) return;
+  clearSession();
+  currentRegistroId = null;
+  showLogin();
+  toast("Sesión cerrada", "ok");
+});
+
+document.getElementById("login-form").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const user = document.getElementById("login-user").value;
+  const pass = document.getElementById("login-pass").value;
+  const err = document.getElementById("login-error");
+  const result = login(user, pass);
+  if (!result.ok) {
+    err.textContent = result.error;
+    err.hidden = false;
+    return;
+  }
+  err.hidden = true;
+  showApp();
+  showPanel("hub");
+  toast(`Bienvenido/a, ${result.session.nombre}`, "ok");
+});
+
 /* —— Bridge status —— */
 async function refreshBridge() {
   const el = document.getElementById("bridge-status");
+  if (!el) return;
   const b = await checkBridge();
   if (b.ok && b.outlook) {
     el.textContent = "Outlook PC: listo (envío automático)";
@@ -87,6 +158,7 @@ function renderHub() {
 }
 
 function openRegistro(id) {
+  if (!getSession()) return showLogin();
   currentRegistroId = id;
   const meta = REGISTROS_CATALOGO.find((r) => r.id === id);
   document.getElementById("form-title").textContent = meta?.nombre || id;
@@ -122,7 +194,6 @@ async function generatePdfFromElement(el, filenamePrefix) {
           })
     )
   );
-  // copy input values into text for PDF
   el.querySelectorAll("input, select, textarea").forEach((src, idx) => {
     const dst = clone.querySelectorAll("input, select, textarea")[idx];
     if (!dst) return;
@@ -183,7 +254,6 @@ function mailFor(id) {
     cc: [],
   };
   const cfg = loadConfig();
-  // global override if filled
   const to = (cfg.destinatarios || []).filter(Boolean).length
     ? cfg.destinatarios.filter(Boolean)
     : defaults.to;
@@ -220,7 +290,13 @@ function addLocalHist(entry) {
   localStorage.setItem(key, JSON.stringify(hist.slice(0, 300)));
 }
 
+function currentUserName() {
+  const s = getSession();
+  return s?.nombre || s?.user || localStorage.getItem("rmp_usuario") || "tablet";
+}
+
 async function handleEnviar(id, state, sheetEl) {
+  if (!getSession()) return showLogin();
   const ok = await confirmDialog(
     "Enviar registro",
     "Se generará el PDF y se enviará por correo con el archivo adjunto (Outlook del PC si el servidor está activo)."
@@ -249,7 +325,7 @@ async function handleEnviar(id, state, sheetEl) {
 
     addLocalHist({
       fecha: new Date().toISOString(),
-      usuario: localStorage.getItem("rmp_usuario") || "tablet",
+      usuario: currentUserName(),
       registro: state.registroNombre || id,
       pdf: filename,
       estado: result.estado,
@@ -267,7 +343,7 @@ async function handleEnviar(id, state, sheetEl) {
     console.error(err);
     addLocalHist({
       fecha: new Date().toISOString(),
-      usuario: localStorage.getItem("rmp_usuario") || "tablet",
+      usuario: currentUserName(),
       registro: state.registroNombre || id,
       pdf: "",
       estado: "Error envío",
@@ -291,7 +367,6 @@ async function renderHistorico() {
     if (r.ok) {
       const data = await r.json();
       if (data.items?.length) {
-        // merge server first
         const localKeys = new Set(items.map((i) => i.fecha + i.pdf));
         for (const s of data.items) {
           if (!localKeys.has(s.fecha + s.pdf)) items.push(s);
@@ -330,9 +405,10 @@ function renderConfig() {
   const cfg = loadConfig();
   const dest = cfg.destinatarios || ["", "", "", ""];
   while (dest.length < 4) dest.push("");
+  const s = getSession();
   document.getElementById("config-form").innerHTML = `
-    <label>Usuario tablet</label>
-    <input id="cfg-usuario" value="${localStorage.getItem("rmp_usuario") || "tablet"}" />
+    <label>Usuario conectado</label>
+    <input id="cfg-usuario" value="${s?.nombre || s?.user || ""}" readonly />
     <label>Asunto (opcional, global)</label>
     <input id="cfg-asunto" value="${cfg.asunto || ""}" placeholder="Vacío = el del registro" />
     <label>Texto correo (opcional)</label>
@@ -345,11 +421,20 @@ function renderConfig() {
   `;
 }
 
-document.getElementById("btn-save-config").addEventListener("click", () => {
-  localStorage.setItem(
-    "rmp_usuario",
-    document.getElementById("cfg-usuario").value.trim() || "tablet"
+function renderUsersEditor() {
+  const s = getSession();
+  const card = document.getElementById("users-card");
+  if (!card) return;
+  card.hidden = !(s && s.admin);
+  if (!(s && s.admin)) return;
+  const lines = loadUsers().map(
+    (u) => `${u.user};${u.pass};${u.nombre || u.user};${u.admin ? "si" : "no"}`
   );
+  document.getElementById("users-editor").value = lines.join("\n");
+}
+
+document.getElementById("btn-save-config").addEventListener("click", () => {
+  if (!getSession()) return showLogin();
   saveConfig({
     asunto: document.getElementById("cfg-asunto").value.trim(),
     cuerpo: document.getElementById("cfg-cuerpo").value,
@@ -364,13 +449,49 @@ document.getElementById("btn-save-config").addEventListener("click", () => {
   toast("Configuración guardada", "ok");
 });
 
+document.getElementById("btn-save-users").addEventListener("click", () => {
+  const s = getSession();
+  if (!s?.admin) {
+    toast("Solo un administrador puede cambiar usuarios", "error");
+    return;
+  }
+  const text = document.getElementById("users-editor").value;
+  const users = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [user, pass, nombre, admin] = line.split(";").map((x) => (x || "").trim());
+      return {
+        user,
+        pass,
+        nombre: nombre || user,
+        admin: /^(si|sí|yes|true|1|admin)$/i.test(admin || ""),
+      };
+    })
+    .filter((u) => u.user && u.pass);
+  if (!users.length) {
+    toast("Debe haber al menos un usuario", "error");
+    return;
+  }
+  if (!users.some((u) => u.admin)) {
+    toast("Debe haber al menos un admin", "error");
+    return;
+  }
+  saveUsers(users);
+  toast("Usuarios guardados", "ok");
+});
+
 /* —— Launchers / SW —— */
 function init() {
-  renderHub();
-  renderConfig();
-  refreshBridge();
+  loadUsers(); // asegura usuarios por defecto
+  if (getSession()) {
+    showApp();
+    showPanel("hub");
+  } else {
+    showLogin();
+  }
   setInterval(refreshBridge, 15000);
-  // Evitar caché antigua del service worker (impedía ver cambios de Lava útiles)
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((r) => r.unregister());
